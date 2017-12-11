@@ -1,4 +1,4 @@
-SUBDIRS := qt gstreamer rygel
+SUBDIRS := pymtpd
 
 all: toolchain sysroot $(SUBDIRS)
 

@@ -145,13 +145,11 @@ tar -xf ../kernel/kernel7-root.tar.gz -C $ROOTDIR
 
 echo "Installing opt packages..."
 
-tar -xf ../packages/qt/qt.tar.gz -C $ROOTDIR
-tar -xf ../packages/gstreamer/gstreamer.tar.gz -C $ROOTDIR
-tar -xf ../packages/rygel/rygel.tar.gz -C $ROOTDIR
+tar -xf ../packages/pymtpd/pymtpd.tar.gz -C $ROOTDIR
 
 $ROOTDIR/sbin/ldconfig -r $ROOTDIR
 
-#$MYCHROOT $ROOTDIR /bin/systemctl reenable qmldemo.service
+$MYCHROOT $ROOTDIR /bin/systemctl reenable pymtpd.service
 
 
 echo "Cleaning up..."
@@ -183,4 +181,4 @@ $MYCHROOT $ROOTDIR sh -c "cd / && find * -xdev -not \( \
               -path proc -prune \
               -path sys -prune \
               -path boot -prune \
-           \) | cpio --create -H newc" | gzip -9 > initrd
+           \) | cpio --create -H newc" | xz -C crc32 -9 > initrd
