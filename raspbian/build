@@ -150,7 +150,8 @@ tar -xf ../packages/pymtpd/pymtpd.tar.gz -C $ROOTDIR
 $ROOTDIR/sbin/ldconfig -r $ROOTDIR
 
 $MYCHROOT $ROOTDIR /bin/systemctl reenable pymtpd.service
-
+$MYCHROOT $ROOTDIR /bin/systemctl reenable piratepython.service
+$MYCHROOT $ROOTDIR /bin/systemctl reenable pp-restart.service
 
 echo "Cleaning up..."
 

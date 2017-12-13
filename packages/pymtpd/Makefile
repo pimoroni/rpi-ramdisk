@@ -12,7 +12,7 @@ endif
 
 all: pymtpd.tar.gz
 
-pymtpd.tar.gz: $(shell for repo in $(REPOS); do echo $$repo.timestamp; done )
+pymtpd.tar.gz: $(shell for repo in $(REPOS); do echo $$repo.timestamp; done ) pymtpd.service piratepython.service pp-restart.service
 	rm -rf --one-file-system $(STAGE)
 	for repo in $(REPOS); do git -C $$repo clean -dfxq; done
 
@@ -20,6 +20,12 @@ pymtpd.tar.gz: $(shell for repo in $(REPOS); do echo $$repo.timestamp; done )
 
 	mkdir -p $(STAGE)/etc/systemd/system
 	cp pymtpd.service $(STAGE)/etc/systemd/system/
+
+	mkdir -p $(STAGE)/mtp
+	cp main.py $(STAGE)/mtp
+
+	cp piratepython.service $(STAGE)/etc/systemd/system/
+	cp pp-restart.service $(STAGE)/etc/systemd/system/
 
 	tar -C $(STAGE) --exclude=.$(PREFIX)/doc --exclude=.$(PREFIX)/include -czf pymtpd.tar.gz .
 
