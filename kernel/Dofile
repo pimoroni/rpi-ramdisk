@@ -1,0 +1,104 @@
+from pydo import *
+
+import sh
+
+def make(*args, **kwargs):
+    sh.make('-C', 'linux', 'ARCH=arm', 'CROSS_COMPILE=../tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-', *args, **kwargs)
+
+class KernelConfig(object):
+    def __init__(self, name, defconfig):
+        self._name = name
+        self._defconfig = defconfig
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def defconfig(self):
+        return self._defconfig + '_defconfig'
+
+    @property
+    def filename(self):
+        return self._name + '.config'
+
+    def make_with_config(self, *args, **kwargs):
+        sh.cp(self.filename, 'linux/.config')
+        make(*args, **kwargs)
+        sh.cp('linux/.config', self.filename)
+
+    def make_tarballs(self, verbose=False):
+        print('   ', self.name)
+        make('mrproper')
+        sh.rm('-rf', '--one-file-system', 'root/')
+        sh.rm('-rf', '--one-file-system', 'boot/')
+        sh.mkdir('-p', 'boot/overlays/')
+        self.make_with_config('-j8', 'zImage', 'modules', 'dtbs', _fg=verbose)
+        self.make_with_config('-j8', 'INSTALL_MOD_PATH=../root', 'modules_install', _fg=verbose)
+        sh.cp('linux/arch/arm/boot/zImage', 'boot/{:s}.img'.format(self.name))
+        sh.sh('-c', 'cp linux/arch/arm/boot/dts/*.dtb boot/')
+        sh.sh('-c', 'cp linux/arch/arm/boot/dts/overlays/*.dtb* boot/overlays/')
+        sh.sh('-c', 'cp linux/arch/arm/boot/dts/overlays/README boot/overlays/')
+        sh.tar('-C', 'root/', '-czf', '{:s}-root.tar.gz'.format(self.name), '.')
+        sh.tar('-C', 'boot/', '-czf', '{:s}-boot.tar.gz'.format(self.name), '.')
+
+
+configs = {
+    'kernel': KernelConfig('kernel', 'bcmrpi'),
+    'kernel7': KernelConfig('kernel7', 'bcm2709'),
+}
+
+
+@command
+def check():
+    try:
+        targets = min(timestamp(f) for f in [
+            'kernel-boot.tar.gz',
+            'kernel-root.tar.gz',
+            'kernel7-boot.tar.gz',
+            'kernel7-root.tar.gz',
+        ])
+    except FileNotFoundError:
+        return True
+    else:
+        confs = max(timestamp(c.filename) for c in configs.values())
+        repos = max(timestamp_git_repo(r) for r in ['linux/', 'tools/'])
+        return targets < max(confs, repos)
+
+
+@command
+def build():
+    for c in configs.values():
+        c.make_tarballs()
+
+
+@command
+def clean():
+    sh.git('-C', 'linux/', 'clean', '-dfxq')
+    sh.rm('-rf', '--one-file-system', 'root/', 'boot/', 'kernel-boot.tar.gz', 'kernel-root.tar.gz', 'kernel7-boot.tar.gz', 'kernel7-root.tar.gz')
+
+
+@command
+def menuconfig(which):
+    configs[which].make_with_config('menuconfig', _fg=True)
+
+
+@command
+def defconfig():
+    make('mrproper')
+    for c in configs.values():
+        c.make_with_config('defconfig')
+
+
+@command
+def oldconfig():
+    make('mrproper')
+    for c in configs.values():
+        c.make_with_config('oldconfig')
+
+
+@command
+def olddefconfig():
+    make('mrproper')
+    for c in configs.values():
+        c.make_with_config('olddefconfig')
