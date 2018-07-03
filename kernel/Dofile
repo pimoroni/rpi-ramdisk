@@ -2,8 +2,10 @@ from pydo import *
 
 import sh
 
+
 def make(*args, **kwargs):
     sh.make('-C', 'linux', 'ARCH=arm', 'CROSS_COMPILE=../tools/arm-bcm2708/gcc-linaro-arm-linux-gnueabihf-raspbian/bin/arm-linux-gnueabihf-', *args, **kwargs)
+
 
 class KernelConfig(object):
     def __init__(self, name, defconfig):
@@ -33,8 +35,9 @@ class KernelConfig(object):
         sh.rm('-rf', '--one-file-system', 'root/')
         sh.rm('-rf', '--one-file-system', 'boot/')
         sh.mkdir('-p', 'boot/overlays/')
-        self.make_with_config('-j8', 'zImage', 'modules', 'dtbs', _fg=verbose)
-        self.make_with_config('-j8', 'INSTALL_MOD_PATH=../root', 'modules_install', _fg=verbose)
+        sh.cp(self.filename, 'linux/.config')
+        make('-j8', 'zImage', 'modules', 'dtbs', _fg=verbose)
+        make('-j8', 'INSTALL_MOD_PATH=../root', 'modules_install', _fg=verbose)
         sh.cp('linux/arch/arm/boot/zImage', 'boot/{:s}.img'.format(self.name))
         sh.sh('-c', 'cp linux/arch/arm/boot/dts/*.dtb boot/')
         sh.sh('-c', 'cp linux/arch/arm/boot/dts/overlays/*.dtb* boot/overlays/')
@@ -51,19 +54,21 @@ configs = {
 
 @command
 def check():
-    try:
-        targets = min(timestamp(f) for f in [
-            'kernel-boot.tar.gz',
-            'kernel-root.tar.gz',
-            'kernel7-boot.tar.gz',
-            'kernel7-root.tar.gz',
-        ])
-    except FileNotFoundError:
-        return True
-    else:
-        confs = max(timestamp(c.filename) for c in configs.values())
-        repos = max(timestamp_git_repo(r) for r in ['linux/', 'tools/'])
-        return targets < max(confs, repos)
+    sources = [
+        *(c.filename for c in configs.values()),
+        *repo_files('linux/'),
+        *repo_files('tools/'),
+        __file__,
+    ]
+
+    targets = [
+        'kernel-boot.tar.gz',
+        'kernel-root.tar.gz',
+        'kernel7-boot.tar.gz',
+        'kernel7-root.tar.gz',
+    ]
+
+    return check_timestamps(sources, targets, verbose=True)
 
 
 @command
