@@ -1,0 +1,104 @@
+import os
+
+from pydo import *
+
+import itertools
+import pathlib
+
+import sh
+
+from .. import packages
+
+
+def conf_form_package(p):
+    return """
+    # packages for {:s}
+    """
+    for p in packages.enabled_submodules:
+        yield '# Packages for {:s}'
+        print(p.__name__.split('.')[-1])
+
+
+
+multistrap_conf = """
+    [General]
+    arch=armhf
+    aptsources=
+    bootstrap=Raspbian Foundation
+    omitrequired=true
+    addimportant=false
+    allowrecommends=false
+    
+    [Raspbian]
+    source=http://mirrordirector.raspbian.org/raspbian
+    suite=stretch
+    
+    [Foundation]
+    source=http://archive.raspberrypi.org/debian
+    suite=stretch
+    packages=build-essential
+
+    packages={:s}
+    """.format(' '.join(itertools.chain(*(p.sysroot_debs for p in packages.enabled_submodules))))
+
+multistrap_conf_file = pathlib.Path('multistrap.conf')
+
+
+def multistrap(root, config_file):
+
+    sh.rm('-rf', '--one-file-system', 'sysroot/')
+    sh.mkdir('-p', 'sysroot/etc/apt/trusted.gpg.d/')
+    sh.gpg('--export', '82B129927FA3303E', _out='sysroot/etc/apt/trusted.gpg.d/raspberrypi-archive-keyring.gpg')
+    sh.gpg('--export', '9165938D90FDDD2E', _out='sysroot/etc/apt/trusted.gpg.d/raspbian-archive-keyring.gpg')
+
+    new_env = os.environ.copy()
+    if "APT_HTTP_PROXY" in new_env:
+        new_env["http_proxy"] = new_env["APT_HTTP_PROXY"]
+
+    sh.multistrap('-d', str(root), '-f', str(config_file), _env=new_env)
+
+
+def relative_links(root):
+
+    root = pathlib.Path(root).resolve()
+
+    for path in pathlib.Path(root).rglob('**'):
+        if path.is_symlink():
+            target = os.readlink(str(path))
+            if target[0] != '/':
+                continue
+            if target.startswith(str(root)):
+                continue
+            path.unlink()
+            os.symlink(str(path.relative_to(root)), str(path))
+
+
+@command
+def check():
+    try:
+        if multistrap_conf_file.read_text() == multistrap_conf:
+            return False
+    except FileNotFoundError:
+        pass
+    return True
+
+@command
+def build():
+
+    multistrap_conf_file.write_text(multistrap_conf)
+    multistrap('sysroot/', multistrap_conf_file)
+    relative_links('sysroot/')
+
+    # work around for the following bugs:
+    #  https://github.com/raspberrypi/firmware/issues/1013
+    #  https://bugreports.qt.io/browse/QTBUG-62216
+    #  https://bugreports.qt.io/browse/QTBUG-69176
+    # The workaround is simply to copy manually fixed pkgconfig files
+    # somewhere where the build will find them.
+
+
+    # hopefully these arent needed
+    #sh.sh('-c', 'cp', 'pkgconfig/*', 'sysroot/usr/lib/pkgconfig/')
+    #	mkdir -p sysroot/opt
+    #	cd sysroot/opt && for dir in $(PACKAGES); do ln -s ../../$$dir/root/opt/$$dir $$dir; done
+    #	touch sysroot
