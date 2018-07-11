@@ -72,7 +72,7 @@ this_module().targets = [
 @command
 def build():
     for c in configs.values():
-        c.make_tarballs()
+        c.make_tarballs(verbose=False)
 
 
 @command
