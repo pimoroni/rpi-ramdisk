@@ -11,7 +11,7 @@ else
 REDIRECT := > /dev/null
 endif
 
-all: kernel kernel7
+all: kernel
 
 kernel: kernel-boot.tar.gz kernel-root.tar.gz
 

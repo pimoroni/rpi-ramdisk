@@ -31,10 +31,11 @@ sysroot: sysroot.conf ../.config
 	#  https://bugreports.qt.io/browse/QTBUG-69176
 	# The workaround is simply to copy manually fixed pkgconfig files
 	# somewhere where the build will find them.
+	mkdir -p sysroot/usr/lib/pkgconfig/
 	cp pkgconfig/* sysroot/usr/lib/pkgconfig/
 	touch sysroot
 
-$(PACKAGES): toolchain sysroot
+$(PACKAGES): sysroot
 	$(MAKE) -C $@
 
 clean:

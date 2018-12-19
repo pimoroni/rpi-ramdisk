@@ -39,9 +39,10 @@ suite=stretch
 # Required packages
 packages=base-files base-passwd bash coreutils dash debianutils diffutils dpkg
 packages=findutils grep gzip init libc-bin login mount sed tar util-linux cpio
-packages=ncurses-base
+# packages=sysvinit-core
+# packages=ncurses-base
 
 # Optional base packages
-packages=systemd udev kmod gpgv apt net-tools wpasupplicant crda
-packages=firmware-brcm80211 ca-certificates openssl
+# packages=systemd udev kmod gpgv apt net-tools wpasupplicant crda
+# packages=firmware-brcm80211 ca-certificates openssl
 

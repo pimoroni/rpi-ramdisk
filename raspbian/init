@@ -1,20 +1,14 @@
 #!/bin/sh
 
-# load persistent configuration files from SD card before
-# launching systemd.
-
-# the settings will be exposed to all unit files.
+sleep 0.2
 
 mknod /dev/mmcblk0p1 b 179 1
 mount -o ro /dev/mmcblk0p1 /boot
-if [ -f /boot/settings.conf ]; then
-  mkdir -p /etc/systemd/system.conf.d/
-  cp /boot/settings.conf /etc/systemd/system.conf.d/10-settings.conf
+
+if [ -f "/boot/keybow" ]; then
+	cp /boot/keybow /usr/bin/keybow
+	chmod +x /usr/bin/keybow
+	systemctl restart keybow
 fi
-if [ -f /boot/wpa_supplicant.conf ]; then
-  cp /boot/wpa_supplicant.conf /etc/wpa_supplicant/
-fi
-umount /boot
-rm /dev/mmcblk0p1
 
 exec /sbin/init

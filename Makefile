@@ -1,11 +1,11 @@
 all: boot.zip dnsmasq.conf
 
-SUBDIRS=kernel firmware packages raspbian
+SUBDIRS=kernel firmware raspbian
 
 $(SUBDIRS):
 	$(MAKE) -C $@
 
-raspbian: kernel packages
+raspbian: kernel
 
 boot.zip: kernel firmware raspbian
 	mkdir -p boot/
