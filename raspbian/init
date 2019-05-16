@@ -3,7 +3,7 @@
 sleep 0.2
 
 mknod /dev/mmcblk0p1 b 179 1
-mount -o ro /dev/mmcblk0p1 /boot
+mount -o rw /dev/mmcblk0p1 /boot
 
 if [ -f "/boot/keybow" ]; then
 	cp /boot/keybow /usr/bin/keybow
