@@ -1,0 +1,11 @@
+[Unit]
+Description=Keybow Python Daemon
+After=usb-gadget.service
+
+[Service]
+ExecStart=/usr/bin/keybow
+Restart=on-failure
+RestartSec=5
+
+[Install]
+WantedBy=default.target
