@@ -3,3 +3,5 @@
 /.config
 /dnsmasq.conf
 /.idea
+*.tar.gz
+packages/*/root/

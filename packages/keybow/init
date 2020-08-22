@@ -1,0 +1,14 @@
+#!/bin/sh
+
+sleep 0.2
+
+mknod /dev/mmcblk0p1 b 179 1
+mount -o rw /dev/mmcblk0p1 /boot
+
+if [ -f "/boot/keybow" ]; then
+	cp /boot/keybow /usr/bin/keybow
+	chmod +x /usr/bin/keybow
+	systemctl restart keybow
+fi
+
+exec /sbin/init
